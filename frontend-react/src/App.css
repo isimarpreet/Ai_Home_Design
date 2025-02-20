@@ -1,0 +1,49 @@
+/* Centering everything and applying a light background */
+.App {
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background-color: #5b4d58; /* Light gray background */
+  color: #070707; /* Dark text for readability */
+  min-height: 100vh;
+  padding: 20px;
+}
+
+h2, h3 {
+  color: #333333;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+button {
+  padding: 10px 20px;
+  background-color: #4caf50; /* Green */
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background-color: #388e3c;
+}
+
+img {
+  margin-top: 20px;
+  border: 2px solid #cccccc;
+  border-radius: 8px;
+  max-width: 100%;
+  height: auto;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+input[type="file"] {
+  margin-bottom: 15px;
+}
