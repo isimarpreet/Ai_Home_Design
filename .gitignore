@@ -1,0 +1,22 @@
+# Ignore node_modules (Frontend dependencies)
+frontend-react/node_modules/
+
+# Ignore environment variables (API keys, secrets)
+backend/src/main/resources/application.properties
+.env
+
+# Ignore compiled files & dependencies
+backend/target/
+backend/.idea/
+backend/.classpath
+backend/.project
+backend/.settings/
+backend/mvnw
+backend/mvnw.cmd
+
+# Ignore image uploads
+uploads/
+
+# Ignore OS / Editor-specific files
+.DS_Store
+*.log

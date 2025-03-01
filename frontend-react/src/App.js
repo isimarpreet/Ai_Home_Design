@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
-import './App.css';
+import React, { useState } from "react";
+import "./App.css";
 
 function App() {
+  const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [design, setDesign] = useState({
-    wallColor: false,
-    sofa: false,
-    lights: false,
-  });
+  const [roomDescription, setRoomDescription] = useState(""); // Holds the AI-generated room description
+  const [suggestions, setSuggestions] = useState([]); // Holds AI-generated renovation suggestions
+  const [error, setError] = useState("");
 
+  // Handles file selection
   const handleFileChange = (event) => {
     const file = event.target.files[0];
-    
+    setSelectedFile(file);
+
+    // Show image preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreviewUrl(reader.result);
@@ -19,25 +21,83 @@ function App() {
     reader.readAsDataURL(file);
   };
 
-  const handleCheckboxChange = (event) => {
-    const { name, checked } = event.target;
-    setDesign({ ...design, [name]: checked });
+  // Uploads image to backend
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      alert("Please select an image first!");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("image", selectedFile);
+
+    try {
+      const response = await fetch("http://localhost:8080/api/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.text();
+      if (response.ok) {
+        alert("Image uploaded successfully!");
+        fetchSuggestions(selectedFile.name);
+      } else {
+        setError("Error uploading image: " + data);
+      }
+    } catch (error) {
+      setError("Failed to upload image: " + error.message);
+    }
   };
 
-  const showSelected = () => {
-    alert(
-      `Selected Designs:\n
-      Wall Color: ${design.wallColor ? 'Light Blue' : 'No Change'}\n
-      Sofa: ${design.sofa ? 'Modern Leather' : 'No Change'}\n
-      Lights: ${design.lights ? 'LED Panels' : 'No Change'}`
-    );
+  // Fetches AI renovation suggestions after image upload
+  const fetchSuggestions = async (imageName) => {
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/gemini/analyze?imageName=${imageName}`
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        processSuggestions(data.ai_response);
+      } else {
+        setError("Error fetching AI suggestions.");
+      }
+    } catch (error) {
+      setError("Failed to fetch AI suggestions: " + error.message);
+    }
+  };
+
+  // Processes AI response and extracts room description + renovation ideas
+  const processSuggestions = (aiResponse) => {
+    try {
+      const jsonString = aiResponse.replace(/\n/g, ""); // Clean new lines
+      const parsedData = JSON.parse(jsonString);
+
+      const aiText = parsedData.candidates[0].content.parts[0].text;
+
+      // Extract Room Description
+      const roomDescMatch = aiText.match(/ROOM DESCRIPTION:(.*?)RENOVATION IDEAS:/s);
+      const roomDesc = roomDescMatch ? roomDescMatch[1].trim() : "No description found.";
+      setRoomDescription(roomDesc);
+
+      // Extract Renovation Suggestions
+      const suggestionsList = aiText
+        .split("\n")
+        .filter((line) => line.includes("**")) // Select lines with bold text
+        .map((line) => line.replace(/\*\*/g, "").trim());
+
+      setSuggestions(suggestionsList);
+    } catch (error) {
+      setError("Error processing AI response");
+    }
   };
 
   return (
     <div className="App">
       <h2>Upload a Picture of Your Room</h2>
       <input type="file" onChange={handleFileChange} />
-      <br /><br />
+      <button onClick={handleUpload}>Upload Image</button>
 
       {previewUrl && (
         <div>
@@ -46,35 +106,27 @@ function App() {
         </div>
       )}
 
-      <h3>Select Design Changes:</h3>
-      <label>
-        <input
-          type="checkbox"
-          name="wallColor"
-          checked={design.wallColor}
-          onChange={handleCheckboxChange}
-        /> Change Wall Color
-      </label><br />
+      {roomDescription && (
+        <div>
+          <h3>Room Description:</h3>
+          <p>{roomDescription}</p>
+        </div>
+      )}
 
-      <label>
-        <input
-          type="checkbox"
-          name="sofa"
-          checked={design.sofa}
-          onChange={handleCheckboxChange}
-        /> Replace Sofa
-      </label><br />
+      {suggestions.length > 0 && (
+        <div>
+          <h3>AI Renovation Suggestions:</h3>
+          <ul>
+            {suggestions.map((suggestion, index) => (
+              <li key={index}>
+                <input type="checkbox" /> {suggestion}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-      <label>
-        <input
-          type="checkbox"
-          name="lights"
-          checked={design.lights}
-          onChange={handleCheckboxChange}
-        /> Add Ceiling Lights
-      </label><br /><br />
-
-      <button onClick={showSelected}>Show Selected Options</button>
+      {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );
 }
